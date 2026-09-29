@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Pocket Canvas" />
+  <meta name="theme-color" content="#0b0d12" />
+  <title>Pocket Canvas</title>
+  <style>
+    :root {
+      --bg: #0b0d12; --panel: #12151c; --line: #2a3140;
+      --text: #e8edf5; --muted: #8b95a8; --accent: #7aa2ff;
+      --ok: #3dd68c; --err: #ff6b7a;
+      --safe-t: env(safe-area-inset-top); --safe-b: env(safe-area-inset-bottom);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: rgba(122,162,255,.25); }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; min-height: 100dvh;
+    }
+    header {
+      padding: calc(8px + var(--safe-t)) 12px 10px;
+      border-bottom: 1px solid var(--line); background: var(--panel);
+    }
+    .title { font-weight: 700; font-size: 16px; }
+    .sub { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    select, button, label.tog {
+      font: inherit; color: var(--text); background: #181c26;
+      border: 1px solid var(--line); border-radius: 12px;
+      min-height: 44px; padding: 0 12px;
+      display: inline-flex; align-items: center; gap: 8px;
+      touch-action: manipulation;
+    }
+    button.primary { background: #7aa2ff; color: #0b0d12; font-weight: 800; border: 0; flex: 1; min-width: 120px; }
+    button:active, label.tog:active { transform: scale(.98); }
+    label.tog input { width: 18px; height: 18px; }
+    #status { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
+    #status.err { color: var(--err); }
+    #status.ok { color: var(--ok); }
+    main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    textarea {
+      width: 100%; min-height: 28vh; flex: 0 0 auto;
+      border: 0; border-bottom: 1px solid var(--line);
+      background: transparent; color: var(--text);
+      font: 13px/1.45 ui-monospace, Menlo, monospace;
+      padding: 12px; resize: vertical;
+    }
+    .preview-h, .console-h {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; color: var(--muted); font-size: 11px;
+      letter-spacing: .06em; text-transform: uppercase;
+      border-bottom: 1px solid var(--line);
+    }
+    .preview-h button, .console-h button { min-height: 36px; font-size: 13px; }
+    .preview-wrap { flex: 1; min-height: 30vh; position: relative; background: #fff; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+    #log {
+      margin: 0; max-height: 18vh; overflow: auto;
+      padding: 8px 12px calc(10px + var(--safe-b));
+      font: 12px/1.4 ui-monospace, Menlo, monospace; color: #c9d3e3;
+      background: #0e1118;
+    }
+    .grow { flex: 1; }
+    #fs { display: none; position: fixed; inset: 0; z-index: 50; background: #fff; }
+    #fs.on { display: block; }
+    #fs iframe { width: 100%; height: 100%; }
+    #fsClose {
+      position: fixed; top: calc(8px + var(--safe-t)); right: 12px; z-index: 60;
+      width: 44px; height: 44px; border: 0; border-radius: 22px;
+      background: #0b0d12; color: #fff; font-size: 22px; font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">Pocket Canvas</div>
+    <div class="sub">Works in Safari as a website. Paste HTML, then Run or Full page.</div>
+    <div class="controls">
+      <select id="mode">
+        <option value="html">HTML / CSS / JS</option>
+        <option value="auto">Auto detect</option>
+        <option value="react">React / TSX</option>
+      </select>
+      <label class="tog"><input type="checkbox" id="twBox" checked /> Tailwind</label>
+      <label class="tog"><input type="checkbox" id="autoBox" /> Auto-run</label>
+      <button class="primary" id="runBtn" type="button">Run</button>
+      <button id="fullBtn" type="button">Full page</button>
+    </div>
+    <div id="status">Ready. Paste a full HTML file, then tap Run.</div>
+  </header>
+  <main>
+    <textarea id="editor" spellcheck="false" placeholder="Paste the whole Gemini HTML file here, starting at <!DOCTYPE html>"></textarea>
+    <div class="preview-h">
+      <span>Preview</span>
+      <div class="grow"></div>
+      <button type="button" id="sampleBtn">Load sample</button>
+      <button type="button" id="clearBtn">Clear</button>
+    </div>
+    <div class="preview-wrap" id="previewWrap">
+      <iframe id="frame" title="Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
+    </div>
+    <div class="console-h">
+      <span>Console</span>
+      <div class="grow"></div>
+      <button type="button" id="clearLogBtn">Clear log</button>
+    </div>
+    <pre id="log"></pre>
+  </main>
+  <div id="fs">
+    <button type="button" id="fsClose" aria-label="Close preview">×</button>
+    <iframe id="fsFrame" title="Full preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
+  </div>
+<script>
+(function () {
+  var STORE = "pocket-canvas-v2";
+  var editor = document.getElementById("editor");
+  var statusEl = document.getElementById("status");
+  var logEl = document.getElementById("log");
+  var modeEl = document.getElementById("mode");
+  var twBox = document.getElementById("twBox");
+  var autoBox = document.getElementById("autoBox");
+  var lastHtml = "";
+  var timer = 0;
+  var SAMPLE = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>body{font-family:-apple-system;background:#111827;color:#fff;margin:0;display:grid;place-items:center;min-height:100vh}button{padding:14px 22px;border:0;border-radius:14px;background:#38bdf8;font-weight:800}</style></head><body><button id='b'>Tap me: 0</button><script>var n=0;b.onclick=function(){b.textContent='Tap me: '+(++n);console.log(n);}<\/script></body></html>";
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = kind || "";
+  }
+  function log(msg) {
+    logEl.textContent += msg + "\n";
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify({
+        code: editor.value, mode: modeEl.value,
+        tw: twBox.checked, auto: autoBox.checked
+      }));
+    } catch (e) {}
+  }
+  function load() {
+    try {
+      var data = JSON.parse(localStorage.getItem(STORE) || "{}");
+      if (data.code) editor.value = data.code;
+      if (data.mode) modeEl.value = data.mode;
+      twBox.checked = data.tw !== false;
+      autoBox.checked = !!data.auto;
+    } catch (e) {}
+  }
+  function extractDoc(raw) {
+    var text = String(raw || "").replace(/^\uFEFF/, "").trim();
+    var fences = [];
+    var re = /```([a-zA-Z0-9+_-]*)[^\n]*\n([\s\S]*?)```/g, m;
+    while ((m = re.exec(text))) fences.push({ lang: (m[1] || "").toLowerCase(), body: m[2] });
+    if (fences.length) {
+      var html = fences.filter(function (f) { return /html|htm|markup/.test(f.lang); });
+      if (html.length) text = html[0].body;
+    }
+    var idx = text.search(/<!doctype\s+html|<html[\s>]/i);
+    if (idx > 0) text = text.slice(idx);
+    return text.trim();
+  }
+  function looksReact(code) {
+    return /from\s+['"]react['"]/.test(code) || /<[A-Z][A-Za-z0-9]/.test(code) && /export default/.test(code);
+  }
+  function inject(doc, extra) {
+    if (/<body[^>]*>/i.test(doc)) return doc.replace(/<body([^>]*)>/i, "<body$1>" + extra);
+    return extra + doc;
+  }
+  var BRIDGE = "<script>(function(){function s(t,a){try{parent.postMessage({source:'pc',type:t,args:a},'*')}catch(e){}}['log','warn','error'].forEach(function(k){var o=console[k].bind(console);console[k]=function(){s(k,[].slice.call(arguments).map(String));o.apply(console,arguments)}});window.onerror=function(m){s('error',[m])}})();<\/script>";
+  function wrapFragment(doc) {
+    var tw = twBox.checked ? "<script src='https://cdn.tailwindcss.com'><\/script>" : "";
+    if (/<!doctype|<html[\s>]/i.test(doc)) {
+      if (twBox.checked && doc.indexOf("cdn.tailwindcss.com") < 0 && /<head/i.test(doc)) {
+        doc = doc.replace(/<head([^>]*)>/i, "<head$1>" + tw);
+      }
+      return inject(doc, BRIDGE);
+    }
+    return "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" + tw + "</head><body>" + BRIDGE + doc + "</body></html>";
+  }
+  function putPreview(html) {
+    lastHtml = html;
+    var wrap = document.getElementById("previewWrap");
+    wrap.innerHTML = "";
+    var frame = document.createElement("iframe");
+    frame.id = "frame";
+    frame.title = "Preview";
+    frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups allow-same-origin");
+    wrap.appendChild(frame);
+    try { frame.srcdoc = html; }
+    catch (e) { frame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html); }
+  }
+  var CLOSE_BTN = "<button type='button' onclick='location.reload()' style='position:fixed;top:calc(8px + env(safe-area-inset-top));right:12px;z-index:2147483647;width:44px;height:44px;border:0;border-radius:22px;background:#0b0d12;color:#fff;font-size:22px;font-weight:700' aria-label='Close'>×</button>";
+  function withClose(html) {
+    if (/<body[^>]*>/i.test(html)) return html.replace(/<body([^>]*)>/i, "<body$1>" + CLOSE_BTN);
+    return CLOSE_BTN + html;
+  }
+  function closeFull() {
+    document.getElementById("fs").classList.remove("on");
+    setStatus("Closed full page.");
+  }
+  function openFull() {
+    save();
+    if (!lastHtml) run();
+    if (!lastHtml) { setStatus("Paste code and tap Run first.", "err"); return; }
+    var html = withClose(lastHtml);
+    var fs = document.getElementById("fs");
+    var frame = document.getElementById("fsFrame");
+    try { frame.srcdoc = lastHtml; fs.classList.add("on"); }
+    catch (e) {
+      document.open(); document.write(html); document.close(); return;
+    }
+    setStatus("Full page preview. Tap × to return.", "ok");
+  }
+  function run() {
+    save();
+    var raw = editor.value || "";
+    if (!raw.trim()) { setStatus("Nothing to run. Paste code first.", "err"); return; }
+    var doc = extractDoc(raw);
+    try {
+      var html = wrapFragment(doc);
+      putPreview(html);
+      setStatus("Preview updated · " + html.length + " chars", "ok");
+      log("Ran HTML preview");
+    } catch (e) {
+      setStatus(String(e.message || e), "err");
+      log(String(e));
+    }
+  }
+  function bind(id, fn) {
+    var el = document.getElementById(id);
+    el.addEventListener("click", function (e) { e.preventDefault(); fn(); });
+  }
+  bind("runBtn", run);
+  bind("fullBtn", openFull);
+  bind("fsClose", closeFull);
+  bind("sampleBtn", function () { editor.value = SAMPLE; save(); run(); });
+  bind("clearBtn", function () { editor.value = ""; save(); setStatus("Cleared."); });
+  bind("clearLogBtn", function () { logEl.textContent = ""; });
+  twBox.addEventListener("change", save);
+  autoBox.addEventListener("change", function () { save(); setStatus(autoBox.checked ? "Auto-run on" : "Auto-run off"); });
+  modeEl.addEventListener("change", save);
+  editor.addEventListener("input", function () {
+    save();
+    if (!autoBox.checked) return;
+    clearTimeout(timer);
+    timer = setTimeout(run, 900);
+  });
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (!d || d.source !== "pc") return;
+    log((d.type === "error" ? "error: " : "") + (d.args || []).join(" "));
+  });
+  load();
+  setStatus("Open this as a website, not an iCloud file.");
+})();
+</script>
+</body>
+</html>
