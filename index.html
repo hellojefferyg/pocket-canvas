@@ -1,263 +1,699 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-neutral-950 text-neutral-100">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Pocket Canvas" />
-  <meta name="theme-color" content="#0b0d12" />
-  <title>Pocket Canvas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Canvas Runner - Mobile Code Preview</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Preload Babel Standalone so it is ready immediately -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js"></script>
+
   <style>
-    :root {
-      --bg: #0b0d12; --panel: #12151c; --line: #2a3140;
-      --text: #e8edf5; --muted: #8b95a8; --accent: #7aa2ff;
-      --ok: #3dd68c; --err: #ff6b7a;
-      --safe-t: env(safe-area-inset-top); --safe-b: env(safe-area-inset-bottom);
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: rgba(122,162,255,.25); }
-    html, body { margin: 0; height: 100%; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-      background: var(--bg); color: var(--text);
-      display: flex; flex-direction: column; min-height: 100dvh;
-    }
-    header {
-      padding: calc(8px + var(--safe-t)) 12px 10px;
-      border-bottom: 1px solid var(--line); background: var(--panel);
-    }
-    .title { font-weight: 700; font-size: 16px; }
-    .sub { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
-    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    select, button, label.tog {
-      font: inherit; color: var(--text); background: #181c26;
-      border: 1px solid var(--line); border-radius: 12px;
-      min-height: 44px; padding: 0 12px;
-      display: inline-flex; align-items: center; gap: 8px;
-      touch-action: manipulation;
-    }
-    button.primary { background: #7aa2ff; color: #0b0d12; font-weight: 800; border: 0; flex: 1; min-width: 120px; }
-    button:active, label.tog:active { transform: scale(.98); }
-    label.tog input { width: 18px; height: 18px; }
-    #status { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
-    #status.err { color: var(--err); }
-    #status.ok { color: var(--ok); }
-    main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
     textarea {
-      width: 100%; min-height: 28vh; flex: 0 0 auto;
-      border: 0; border-bottom: 1px solid var(--line);
-      background: transparent; color: var(--text);
-      font: 13px/1.45 ui-monospace, Menlo, monospace;
-      padding: 12px; resize: vertical;
-    }
-    .preview-h, .console-h {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; color: var(--muted); font-size: 11px;
-      letter-spacing: .06em; text-transform: uppercase;
-      border-bottom: 1px solid var(--line);
-    }
-    .preview-h button, .console-h button { min-height: 36px; font-size: 13px; }
-    .preview-wrap { flex: 1; min-height: 30vh; position: relative; background: #fff; }
-    iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
-    #log {
-      margin: 0; max-height: 18vh; overflow: auto;
-      padding: 8px 12px calc(10px + var(--safe-b));
-      font: 12px/1.4 ui-monospace, Menlo, monospace; color: #c9d3e3;
-      background: #0e1118;
-    }
-    .grow { flex: 1; }
-    #fs { display: none; position: fixed; inset: 0; z-index: 50; background: #fff; }
-    #fs.on { display: block; }
-    #fs iframe { width: 100%; height: 100%; }
-    #fsClose {
-      position: fixed; top: calc(8px + var(--safe-t)); right: 12px; z-index: 60;
-      width: 44px; height: 44px; border: 0; border-radius: 22px;
-      background: #0b0d12; color: #fff; font-size: 22px; font-weight: 700;
+      tab-size: 2;
+      -moz-tab-size: 2;
+      caret-color: #38bdf8;
+      resize: none;
     }
   </style>
 </head>
-<body>
-  <header>
-    <div class="title">Pocket Canvas</div>
-    <div class="sub">Works in Safari as a website. Paste HTML, then Run or Full page.</div>
-    <div class="controls">
-      <select id="mode">
-        <option value="html">HTML / CSS / JS</option>
-        <option value="auto">Auto detect</option>
-        <option value="react">React / TSX</option>
+
+<body class="h-[100dvh] w-full flex flex-col bg-neutral-950 text-neutral-100 overflow-hidden">
+
+  <!-- TOP UTILITY BAR -->
+  <header class="h-12 bg-neutral-900 border-b border-neutral-800 px-2.5 flex items-center justify-between flex-shrink-0 z-20 gap-1.5">
+    <div class="flex items-center space-x-1.5 min-w-0 flex-shrink">
+      <span class="font-bold text-xs sm:text-sm tracking-tight text-white flex items-center gap-1.5 whitespace-nowrap">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="hidden xs:inline">Canvas</span>Runner
+      </span>
+      <!-- Mode selector allows auto-detection or manual override if desired -->
+      <select id="modeSelect" onchange="handleModeChange()" class="text-[11px] font-mono py-1 px-1 rounded bg-neutral-800 text-sky-400 border border-neutral-700 outline-none max-w-[95px] sm:max-w-none">
+        <option value="auto">Auto</option>
+        <option value="html">HTML</option>
+        <option value="react">React</option>
+        <option value="ts">TS</option>
       </select>
-      <label class="tog"><input type="checkbox" id="twBox" checked /> Tailwind</label>
-      <label class="tog"><input type="checkbox" id="autoBox" /> Auto-run</label>
-      <button class="primary" id="runBtn" type="button">Run</button>
-      <button id="fullBtn" type="button">Full page</button>
     </div>
-    <div id="status">Ready. Paste a full HTML file, then tap Run.</div>
+
+    <!-- Core Actions -->
+    <div class="flex items-center space-x-1 flex-shrink-0">
+      <!-- Hidden file input for upload -->
+      <input type="file" id="fileUploadInput" accept=".html,.htm,.js,.jsx,.ts,.tsx,.txt,.css" class="hidden" onchange="handleFileUpload(event)">
+      
+      <!-- Upload Button (compact icon on small screens) -->
+      <button onclick="document.getElementById('fileUploadInput').click()" class="h-8 px-2 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 rounded text-xs font-medium flex items-center gap-1 border border-neutral-700" title="Upload Code File">
+        <svg class="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span class="hidden sm:inline">Upload</span>
+      </button>
+
+      <!-- Download Button (compact icon on small screens) -->
+      <button onclick="downloadCodeFile()" class="h-8 px-2 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 rounded text-xs font-medium flex items-center gap-1 border border-neutral-700" title="Download Code File">
+        <svg class="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span class="hidden sm:inline">Save</span>
+      </button>
+
+      <!-- Quick Run & Preview Button (High Priority - Always Visible) -->
+      <button onclick="handleRunAction()" class="h-8 px-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded text-xs font-bold text-white flex items-center gap-1.5 shadow-md flex-shrink-0">
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <span>Run</span>
+      </button>
+    </div>
   </header>
-  <main>
-    <textarea id="editor" spellcheck="false" placeholder="Paste the whole Gemini HTML file here, starting at <!DOCTYPE html>"></textarea>
-    <div class="preview-h">
-      <span>Preview</span>
-      <div class="grow"></div>
-      <button type="button" id="sampleBtn">Load sample</button>
-      <button type="button" id="clearBtn">Clear</button>
+
+  <!-- MOBILE VIEW TABS & FAST TOOLS -->
+  <div class="h-10 bg-neutral-900 border-b border-neutral-800 px-2.5 flex items-center justify-between flex-shrink-0 z-10 md:hidden gap-1">
+    <!-- View Switcher -->
+    <div class="flex items-center space-x-1 flex-1 max-w-[170px]">
+      <button id="tabBtnCode" onclick="switchMobileView('code')" class="flex-1 py-1 text-xs font-semibold rounded bg-neutral-800 text-white border border-neutral-700 transition">
+        Code
+      </button>
+      <button id="tabBtnPreview" onclick="switchMobileView('preview')" class="flex-1 py-1 text-xs font-semibold rounded text-neutral-400 hover:text-white transition">
+        Preview
+      </button>
     </div>
-    <div class="preview-wrap" id="previewWrap">
-      <iframe id="frame" title="Preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
+
+    <!-- Quick action links -->
+    <div class="flex items-center space-x-1.5 flex-shrink-0">
+      <button onclick="handleRunAction()" class="text-xs text-white bg-emerald-700 hover:bg-emerald-600 font-semibold px-2 py-1 rounded border border-emerald-500/50 active:scale-95 flex items-center gap-1">
+        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span>Run</span>
+      </button>
+      <button onclick="pasteClipboard()" class="text-xs text-sky-400 hover:text-sky-300 font-medium px-2 py-1 rounded bg-neutral-800 border border-neutral-700 active:bg-neutral-700">
+        Paste
+      </button>
+      <button onclick="openFullPage()" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium px-2 py-1 rounded bg-neutral-800 border border-neutral-700 active:bg-neutral-700 flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+        Full
+      </button>
     </div>
-    <div class="console-h">
-      <span>Console</span>
-      <div class="grow"></div>
-      <button type="button" id="clearLogBtn">Clear log</button>
-    </div>
-    <pre id="log"></pre>
-  </main>
-  <div id="fs">
-    <button type="button" id="fsClose" aria-label="Close preview">×</button>
-    <iframe id="fsFrame" title="Full preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
   </div>
-<script>
-(function () {
-  var STORE = "pocket-canvas-v2";
-  var editor = document.getElementById("editor");
-  var statusEl = document.getElementById("status");
-  var logEl = document.getElementById("log");
-  var modeEl = document.getElementById("mode");
-  var twBox = document.getElementById("twBox");
-  var autoBox = document.getElementById("autoBox");
-  var lastHtml = "";
-  var timer = 0;
-  var SAMPLE = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>body{font-family:-apple-system;background:#111827;color:#fff;margin:0;display:grid;place-items:center;min-height:100vh}button{padding:14px 22px;border:0;border-radius:14px;background:#38bdf8;font-weight:800}</style></head><body><button id='b'>Tap me: 0</button><script>var n=0;b.onclick=function(){b.textContent='Tap me: '+(++n);console.log(n);}<\/script></body></html>";
-  function setStatus(msg, kind) {
-    statusEl.textContent = msg;
-    statusEl.className = kind || "";
-  }
-  function log(msg) {
-    logEl.textContent += msg + "\n";
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-  function save() {
-    try {
-      localStorage.setItem(STORE, JSON.stringify({
-        code: editor.value, mode: modeEl.value,
-        tw: twBox.checked, auto: autoBox.checked
-      }));
-    } catch (e) {}
-  }
-  function load() {
-    try {
-      var data = JSON.parse(localStorage.getItem(STORE) || "{}");
-      if (data.code) editor.value = data.code;
-      if (data.mode) modeEl.value = data.mode;
-      twBox.checked = data.tw !== false;
-      autoBox.checked = !!data.auto;
-    } catch (e) {}
-  }
-  function extractDoc(raw) {
-    var text = String(raw || "").replace(/^\uFEFF/, "").trim();
-    var fences = [];
-    var re = /```([a-zA-Z0-9+_-]*)[^\n]*\n([\s\S]*?)```/g, m;
-    while ((m = re.exec(text))) fences.push({ lang: (m[1] || "").toLowerCase(), body: m[2] });
-    if (fences.length) {
-      var html = fences.filter(function (f) { return /html|htm|markup/.test(f.lang); });
-      if (html.length) text = html[0].body;
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    
+    <!-- CODE EDITOR PANE -->
+    <section id="editorPane" class="w-full md:w-1/2 flex flex-col h-full bg-neutral-950 border-r border-neutral-800">
+      <!-- Fast subheader -->
+      <div class="h-8 px-3 bg-neutral-900/60 border-b border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
+        <div class="flex items-center space-x-2">
+          <span id="charCount">0 lines</span>
+          <span class="text-neutral-600">|</span>
+          <span id="detectedType" class="text-emerald-400 font-mono">React TSX</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="clearCode()" class="text-neutral-400 hover:text-rose-400">Clear</button>
+          <button onclick="copyCode()" class="text-neutral-400 hover:text-neutral-200">Copy</button>
+        </div>
+      </div>
+
+      <!-- Raw Mobile-Optimized Textarea (Fast, Native, No lag) -->
+      <div class="flex-1 relative p-0 overflow-hidden bg-neutral-950">
+        <textarea 
+          id="rawCodeInput"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          class="w-full h-full p-3 bg-transparent text-neutral-100 font-mono text-xs leading-relaxed outline-none border-0 overflow-y-auto"
+          placeholder="Paste any HTML, CSS, React (.jsx/.tsx), or TypeScript (.ts) code here..."></textarea>
+      </div>
+
+      <!-- Keyboard shortcuts / Quick snippets bar -->
+      <div class="h-9 bg-neutral-900 border-t border-neutral-800 px-2 flex items-center justify-between text-[11px] text-neutral-400 overflow-x-auto pb-[env(safe-area-inset-bottom,0px)]">
+        <div class="flex items-center space-x-1.5 font-mono text-[10px] whitespace-nowrap">
+          <button onclick="loadTemplate('react')" class="px-2 py-0.5 bg-neutral-800 rounded text-sky-400 hover:bg-neutral-700">React Sample</button>
+          <button onclick="loadTemplate('html')" class="px-2 py-0.5 bg-neutral-800 rounded text-emerald-400 hover:bg-neutral-700">HTML Sample</button>
+          <button onclick="loadTemplate('ts')" class="px-2 py-0.5 bg-neutral-800 rounded text-purple-400 hover:bg-neutral-700">TS Sample</button>
+          <button onclick="insertAtCursor('<div></div>')" class="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-300 hover:bg-neutral-700">&lt;div&gt;</button>
+          <button onclick="insertAtCursor('const [state, setState] = useState(0);')" class="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-300 hover:bg-neutral-700">useState</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PREVIEW PANE -->
+    <section id="previewPane" class="hidden md:flex md:w-1/2 flex-col h-full bg-neutral-900 relative">
+      <!-- Preview Subheader -->
+      <div class="h-8 px-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
+        <span class="flex items-center gap-1.5 font-medium text-neutral-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Output
+        </span>
+        <button onclick="openFullPage()" class="text-neutral-300 hover:text-white flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          Full Page
+        </button>
+      </div>
+
+      <!-- Preview IFrame Container -->
+      <div class="flex-1 w-full h-full bg-neutral-950 relative">
+        <iframe id="livePreviewFrame" class="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-modals allow-same-origin allow-forms allow-popups"></iframe>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TRUE 100% FULL MOBILE PREVIEW OVERLAY -->
+  <div id="fullViewOverlay" class="fixed inset-0 z-50 bg-black flex flex-col hidden">
+    <!-- Slim top bar with instant close -->
+    <div class="h-10 bg-neutral-900/95 border-b border-neutral-800 px-3 flex items-center justify-between text-xs text-white">
+      <span class="font-medium text-neutral-300 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Fullscreen Preview
+      </span>
+      <div class="flex items-center space-x-2">
+        <button onclick="runCode()" class="px-2.5 py-1 bg-emerald-600 rounded text-white font-medium text-xs active:bg-emerald-700">Refresh</button>
+        <button onclick="closeFullPage()" class="px-2.5 py-1 bg-neutral-800 rounded text-neutral-200 font-medium text-xs active:bg-neutral-700">Exit</button>
+      </div>
+    </div>
+    <div class="flex-1 w-full h-full bg-white relative">
+      <iframe id="fullScreenPreviewFrame" class="w-full h-full border-0 bg-white" sandbox="allow-scripts allow-modals allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-neutral-900 border border-neutral-700 text-neutral-200 text-xs px-3.5 py-2 rounded-lg shadow-xl pointer-events-none opacity-0 transition-opacity duration-200 z-50"></div>
+
+  <script>
+    const codeInput = document.getElementById('rawCodeInput');
+    const liveFrame = document.getElementById('livePreviewFrame');
+    const fullFrame = document.getElementById('fullScreenPreviewFrame');
+    const fullViewOverlay = document.getElementById('fullViewOverlay');
+    const charCountEl = document.getElementById('charCount');
+    const detectedTypeEl = document.getElementById('detectedType');
+    const modeSelect = document.getElementById('modeSelect');
+    
+    let activeMobileTab = 'code';
+    let currentFileName = 'App.tsx';
+
+    // Reliable starter templates
+    const TEMPLATES = {
+      react: `// React + Tailwind Mobile Card
+function App() {
+  const [count, setCount] = React.useState(0);
+  const [liked, setLiked] = React.useState(false);
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-white flex flex-col justify-center items-center p-4">
+      <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Runner Active
+          </span>
+          <span className="text-xs text-neutral-400 font-mono">React 18</span>
+        </div>
+
+        <h1 className="text-lg font-bold text-white">Interactive Mobile Playground</h1>
+        <p className="text-xs text-neutral-400 leading-relaxed">
+          Paste any HTML snippet, full page, React component, or TypeScript code. Everything renders smoothly right on your device.
+        </p>
+
+        <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 text-center">
+          <div className="text-4xl font-black font-mono text-emerald-400 mb-3">{count}</div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setCount(c => c - 1)}
+              className="flex-1 py-2 bg-neutral-800 hover:bg-neutral-700 active:scale-95 rounded-lg text-sm font-semibold transition"
+            >
+              - 1
+            </button>
+            <button 
+              onClick={() => setCount(c => c + 1)}
+              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 rounded-lg text-sm font-semibold transition text-white"
+            >
+              + 1
+            </button>
+          </div>
+        </div>
+
+        <button 
+          onClick={() => setLiked(!liked)}
+          className={"w-full py-2.5 rounded-xl text-xs font-semibold transition active:scale-95 " + (liked ? "bg-rose-600 text-white" : "bg-neutral-800 text-neutral-300")}
+        >
+          {liked ? "❤️ Saved to Favorites" : "🤍 Tap to Like"}
+        </button>
+      </div>
+    </div>
+  );
+}`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="bg-neutral-950 text-white min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-neutral-900 border border-neutral-800 p-6 rounded-2xl shadow-xl text-center space-y-4">
+    <div class="w-12 h-12 bg-sky-500/20 text-sky-400 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+      ⚡
+    </div>
+    <h2 class="text-xl font-bold">Standard HTML + Tailwind</h2>
+    <p class="text-xs text-neutral-400">Pure HTML, inline styles, CSS, and vanilla scripts run automatically with zero setup.</p>
+    <button onclick="document.getElementById('counter').innerText = ++count" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 active:scale-95 rounded-xl font-semibold text-sm transition">
+      Taps: <span id="counter">0</span>
+    </button>
+    <script>
+      let count = 0;
+    <\/script>
+  </div>
+</body>
+</html>`,
+      ts: `// Vanilla TypeScript Execution
+interface UserProfile {
+  name: string;
+  role: string;
+  contributions: number;
+}
+
+const user: UserProfile = {
+  name: "Mobile Developer",
+  role: "Canvas Architect",
+  contributions: 42
+};
+
+document.body.innerHTML = \`
+  <div style="min-height: 100vh; background: #0a0a0a; color: white; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 16px;">
+    <div style="background: #171717; border: 1px solid #262626; border-radius: 16px; padding: 24px; max-width: 360px; width: 100%;">
+      <span style="font-size: 11px; color: #a855f7; font-weight: bold; text-transform: uppercase;">TypeScript Native</span>
+      <h2 style="font-size: 18px; margin: 8px 0;">\${user.name}</h2>
+      <p style="font-size: 13px; color: #a3a3a3; margin: 0 0 16px 0;">Role: \${user.role}</p>
+      <div style="background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #262626; font-size: 14px;">
+        Contributions: <strong style="color: #a855f7;">\${user.contributions}</strong>
+      </div>
+    </div>
+  </div>
+\`;`
+    };
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      codeInput.value = TEMPLATES.react;
+      updateMetrics();
+      runCode();
+
+      codeInput.addEventListener('input', () => {
+        updateMetrics();
+      });
+    });
+
+    function handleModeChange() {
+      updateMetrics();
+      runCode();
     }
-    var idx = text.search(/<!doctype\s+html|<html[\s>]/i);
-    if (idx > 0) text = text.slice(idx);
-    return text.trim();
-  }
-  function looksReact(code) {
-    return /from\s+['"]react['"]/.test(code) || /<[A-Z][A-Za-z0-9]/.test(code) && /export default/.test(code);
-  }
-  function inject(doc, extra) {
-    if (/<body[^>]*>/i.test(doc)) return doc.replace(/<body([^>]*)>/i, "<body$1>" + extra);
-    return extra + doc;
-  }
-  var BRIDGE = "<script>(function(){function s(t,a){try{parent.postMessage({source:'pc',type:t,args:a},'*')}catch(e){}}['log','warn','error'].forEach(function(k){var o=console[k].bind(console);console[k]=function(){s(k,[].slice.call(arguments).map(String));o.apply(console,arguments)}});window.onerror=function(m){s('error',[m])}})();<\/script>";
-  function wrapFragment(doc) {
-    var tw = twBox.checked ? "<script src='https://cdn.tailwindcss.com'><\/script>" : "";
-    if (/<!doctype|<html[\s>]/i.test(doc)) {
-      if (twBox.checked && doc.indexOf("cdn.tailwindcss.com") < 0 && /<head/i.test(doc)) {
-        doc = doc.replace(/<head([^>]*)>/i, "<head$1>" + tw);
+
+    function updateMetrics() {
+      const val = codeInput.value;
+      const lines = val.split('\n').length;
+      charCountEl.innerText = `${lines} line${lines === 1 ? '' : 's'}`;
+
+      const mode = getEffectiveMode(val);
+      detectedTypeEl.innerText = mode.toUpperCase();
+      if (mode === 'react') {
+        detectedTypeEl.className = "text-sky-400 font-mono";
+      } else if (mode === 'html') {
+        detectedTypeEl.className = "text-emerald-400 font-mono";
+      } else {
+        detectedTypeEl.className = "text-purple-400 font-mono";
       }
-      return inject(doc, BRIDGE);
     }
-    return "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" + tw + "</head><body>" + BRIDGE + doc + "</body></html>";
-  }
-  function putPreview(html) {
-    lastHtml = html;
-    var wrap = document.getElementById("previewWrap");
-    wrap.innerHTML = "";
-    var frame = document.createElement("iframe");
-    frame.id = "frame";
-    frame.title = "Preview";
-    frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups allow-same-origin");
-    wrap.appendChild(frame);
-    try { frame.srcdoc = html; }
-    catch (e) { frame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html); }
-  }
-  var CLOSE_BTN = "<button type='button' onclick='location.reload()' style='position:fixed;top:calc(8px + env(safe-area-inset-top));right:12px;z-index:2147483647;width:44px;height:44px;border:0;border-radius:22px;background:#0b0d12;color:#fff;font-size:22px;font-weight:700' aria-label='Close'>×</button>";
-  function withClose(html) {
-    if (/<body[^>]*>/i.test(html)) return html.replace(/<body([^>]*)>/i, "<body$1>" + CLOSE_BTN);
-    return CLOSE_BTN + html;
-  }
-  function closeFull() {
-    document.getElementById("fs").classList.remove("on");
-    setStatus("Closed full page.");
-  }
-  function openFull() {
-    save();
-    if (!lastHtml) run();
-    if (!lastHtml) { setStatus("Paste code and tap Run first.", "err"); return; }
-    var html = withClose(lastHtml);
-    var fs = document.getElementById("fs");
-    var frame = document.getElementById("fsFrame");
-    try { frame.srcdoc = lastHtml; fs.classList.add("on"); }
-    catch (e) {
-      document.open(); document.write(html); document.close(); return;
+
+    function getEffectiveMode(source) {
+      const selected = modeSelect.value;
+      if (selected !== 'auto') return selected;
+
+      // Smart auto-detection
+      const hasFullHtmlDoc = /<!DOCTYPE html>|<html[\s>]/i.test(source);
+      const hasReactKeywords = /import\s+React|\bfrom\s+['"]react['"]|export\s+default\s+function|function\s+[A-Z]\w*\s*\(|const\s+[A-Z]\w*\s*=\s*\(|useState|useEffect|useRef|useMemo/i.test(source);
+      const hasJsxMarkup = /<[A-Z][A-Za-z0-9]*\b|<\/[A-Z][A-Za-z0-9]*>|className=/.test(source);
+      const hasTSKeywords = /:\s*(string|number|boolean|any|void|unknown|never|Record<|Array<)\b|\binterface\s+[A-Z]|\btype\s+[A-Z]\w*\s*=|\bas\s+(const|string|number)/.test(source);
+
+      // If it has full HTML document structure and no explicit React hooks/components
+      if (hasFullHtmlDoc && !hasReactKeywords) {
+        return 'html';
+      }
+
+      // If it looks like a React component or uses JSX
+      if (hasReactKeywords || hasJsxMarkup) {
+        return 'react';
+      }
+
+      // If it has HTML tags (e.g. <div>...</div>) but no React code
+      if (/^\s*<(!DOCTYPE|[a-z0-9-]+)[\s>]/i.test(source) || /<div|<section|<p|<button|<style|<script/i.test(source)) {
+        return 'html';
+      }
+
+      // If it has TypeScript types
+      if (hasTSKeywords) {
+        return 'ts';
+      }
+
+      return 'html';
     }
-    setStatus("Full page preview. Tap × to return.", "ok");
-  }
-  function run() {
-    save();
-    var raw = editor.value || "";
-    if (!raw.trim()) { setStatus("Nothing to run. Paste code first.", "err"); return; }
-    var doc = extractDoc(raw);
-    try {
-      var html = wrapFragment(doc);
-      putPreview(html);
-      setStatus("Preview updated · " + html.length + " chars", "ok");
-      log("Ran HTML preview");
-    } catch (e) {
-      setStatus(String(e.message || e), "err");
-      log(String(e));
+
+    function createSandboxDocument(source) {
+      const trimmed = source.trim();
+      const mode = getEffectiveMode(trimmed);
+
+      // --- 1. FULL HTML OR RAW HTML SNIPPETS ---
+      if (mode === 'html') {
+        // If it's already a full HTML document
+        if (/<!DOCTYPE html>|<html[\s>]/i.test(trimmed)) {
+          let doc = trimmed;
+          // Ensure viewport meta is present for mobile
+          if (!doc.includes('viewport')) {
+            if (doc.includes('<head>')) {
+              doc = doc.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">');
+            } else {
+              doc = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` + doc;
+            }
+          }
+          return doc;
+        }
+
+        // It's an HTML fragment (e.g. <div>...</div>, styles, scripts)
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <style>
+    body { margin: 0; min-height: 100vh; background: #0a0a0a; color: #ededed; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #canvas-error { display: none; margin: 12px; padding: 12px; background: #450a0a; border: 1px solid #dc2626; color: #fecaca; border-radius: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div id="canvas-error"></div>
+  ${trimmed}
+  <script>
+    window.onerror = function(msg, url, line) {
+      var err = document.getElementById('canvas-error');
+      if (err) {
+        err.style.display = 'block';
+        err.textContent = 'Runtime Error: ' + msg + ' (line ' + line + ')';
+      }
+    };
+  <\/script>
+</body>
+</html>`;
+      }
+
+      // --- 2. REACT OR TYPESCRIPT EXECUTION ---
+      // Strip module import statements cleanly so browser Babel doesn't fail on bundle imports
+      let sanitized = trimmed
+        .replace(/import\s+(?:(?:\*\s+as\s+\w+)|(?:\{[^}]*\})|(?:\w+))?\s*(?:,\s*(?:\{[^}]*\}|\w+))?\s*from\s*['"][^'"]*['"];?/g, '')
+        .replace(/import\s+['"][^'"]*['"];?/g, '')
+        .replace(/export\s+default\s+function\s*([a-zA-Z0-9_]*)/g, 'window.__MainComponent = function $1')
+        .replace(/export\s+default\s+class\s*([a-zA-Z0-9_]*)/g, 'window.__MainComponent = class $1')
+        .replace(/export\s+default\s+/g, 'window.__MainComponent = ')
+        .replace(/export\s+{[^}]*};?/g, '')
+        .replace(/export\s+(const|let|var|function|class)\s+/g, '$1 ');
+
+      // Base64 encode the code to safely pass it into the iframe script without HTML escaping / script termination bugs
+      const base64Code = btoa(unescape(encodeURIComponent(sanitized)));
+
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"><\/script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"><\/script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js"><\/script>
+  <style>
+    body { margin: 0; padding: 0; min-height: 100vh; background: #0a0a0a; color: #ededed; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #canvas-error { display: none; margin: 12px; padding: 12px; background: #450a0a; border: 1px solid #dc2626; color: #fecaca; border-radius: 8px; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div id="canvas-error"></div>
+  <div id="root"></div>
+
+  <script>
+    (function() {
+      var errBox = document.getElementById('canvas-error');
+      function reportError(msg) {
+        if (errBox) {
+          errBox.style.display = 'block';
+          errBox.textContent = 'Preview Error:\\n' + msg;
+        }
+        console.error(msg);
+      }
+
+      window.onerror = function(msg, url, line) {
+        reportError(msg + ' (line ' + line + ')');
+      };
+
+      try {
+        var rawCode = decodeURIComponent(escape(atob("${base64Code}")));
+        var isReact = ${mode === 'react'};
+
+        // Make common React hooks globally accessible
+        if (window.React) {
+          window.useState = React.useState;
+          window.useEffect = React.useEffect;
+          window.useRef = React.useRef;
+          window.useMemo = React.useMemo;
+          window.useCallback = React.useCallback;
+          window.useReducer = React.useReducer;
+          window.useContext = React.useContext;
+          window.createContext = React.createContext;
+        }
+
+        // Transpile TypeScript + JSX to vanilla JavaScript
+        var transpiled = Babel.transform(rawCode, {
+          presets: [
+            ['react', { runtime: 'classic' }],
+            ['typescript', { isTSX: true, allExtensions: true }]
+          ],
+          filename: 'canvas-run.tsx'
+        }).code;
+
+        // Execute transpiled script
+        (0, eval)(transpiled);
+
+        if (isReact) {
+          var RootComponent = window.__MainComponent;
+          if (!RootComponent && typeof App !== 'undefined') {
+            RootComponent = App;
+          }
+
+          var rootContainer = document.getElementById('root');
+          if (RootComponent) {
+            ReactDOM.createRoot(rootContainer).render(React.createElement(RootComponent));
+          } else {
+            // Attempt to mount if user wrote inline JSX like <div className="...">...</div>
+            try {
+              var inlineJsx = Babel.transform("ReactDOM.createRoot(document.getElementById('root')).render(" + rawCode + ");", {
+                presets: ['react', 'typescript']
+              }).code;
+              (0, eval)(inlineJsx);
+            } catch(e) {
+              reportError("Could not find a React component to mount.\\nName your component 'App' (e.g. function App() { ... }) or use 'export default function App()'.");
+            }
+          }
+        }
+      } catch(err) {
+        reportError(err.message || String(err));
+      }
+    })();
+  <\/script>
+</body>
+</html>`;
     }
-  }
-  function bind(id, fn) {
-    var el = document.getElementById(id);
-    el.addEventListener("click", function (e) { e.preventDefault(); fn(); });
-  }
-  bind("runBtn", run);
-  bind("fullBtn", openFull);
-  bind("fsClose", closeFull);
-  bind("sampleBtn", function () { editor.value = SAMPLE; save(); run(); });
-  bind("clearBtn", function () { editor.value = ""; save(); setStatus("Cleared."); });
-  bind("clearLogBtn", function () { logEl.textContent = ""; });
-  twBox.addEventListener("change", save);
-  autoBox.addEventListener("change", function () { save(); setStatus(autoBox.checked ? "Auto-run on" : "Auto-run off"); });
-  modeEl.addEventListener("change", save);
-  editor.addEventListener("input", function () {
-    save();
-    if (!autoBox.checked) return;
-    clearTimeout(timer);
-    timer = setTimeout(run, 900);
-  });
-  window.addEventListener("message", function (e) {
-    var d = e.data;
-    if (!d || d.source !== "pc") return;
-    log((d.type === "error" ? "error: " : "") + (d.args || []).join(" "));
-  });
-  load();
-  setStatus("Open this as a website, not an iCloud file.");
-})();
-</script>
+
+    // Execute runner across preview and full screen frames
+    function runCode() {
+      const doc = createSandboxDocument(codeInput.value);
+      applyFrameDoc(liveFrame, doc);
+      if (!fullViewOverlay.classList.contains('hidden')) {
+        applyFrameDoc(fullFrame, doc);
+      }
+    }
+
+    // Reliable cross-mobile iframe document updater
+    function applyFrameDoc(iframe, html) {
+      if (!iframe) return;
+      iframe.srcdoc = html;
+    }
+
+    function handleRunAction() {
+      runCode();
+      if (window.innerWidth < 768) {
+        switchMobileView('preview');
+      }
+      showToast("Ran updated code");
+    }
+
+    // File Upload Handler
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      currentFileName = file.name;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        codeInput.value = e.target.result;
+        updateMetrics();
+        runCode();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // File Download Handler
+    function downloadCodeFile() {
+      const text = codeInput.value;
+      if (!text.trim()) {
+        showToast("Editor is empty");
+        return;
+      }
+
+      const mode = getEffectiveMode(text);
+      let filename = currentFileName;
+      if (!filename || filename === 'App.tsx' || filename === 'index.html') {
+        if (mode === 'react') filename = 'App.tsx';
+        else if (mode === 'ts') filename = 'script.ts';
+        else filename = 'index.html';
+      }
+
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Saved as ${filename}`);
+    }
+
+    // Mobile View Toggle
+    function switchMobileView(view) {
+      activeMobileTab = view;
+      const editorPane = document.getElementById('editorPane');
+      const previewPane = document.getElementById('previewPane');
+      const btnCode = document.getElementById('tabBtnCode');
+      const btnPreview = document.getElementById('tabBtnPreview');
+
+      if (view === 'code') {
+        editorPane.classList.remove('hidden');
+        previewPane.classList.add('hidden');
+        btnCode.className = "flex-1 py-1 text-xs font-semibold rounded bg-neutral-800 text-white border border-neutral-700 transition";
+        btnPreview.className = "flex-1 py-1 text-xs font-semibold rounded text-neutral-400 hover:text-white transition";
+      } else {
+        editorPane.classList.add('hidden');
+        previewPane.classList.remove('hidden');
+        btnPreview.className = "flex-1 py-1 text-xs font-semibold rounded bg-neutral-800 text-white border border-neutral-700 transition";
+        btnCode.className = "flex-1 py-1 text-xs font-semibold rounded text-neutral-400 hover:text-white transition";
+        runCode();
+      }
+    }
+
+    // Full Page Screen
+    function openFullPage() {
+      fullViewOverlay.classList.remove('hidden');
+      const doc = createSandboxDocument(codeInput.value);
+      applyFrameDoc(fullFrame, doc);
+    }
+
+    function closeFullPage() {
+      fullViewOverlay.classList.add('hidden');
+    }
+
+    // Quick Clipboard Paste
+    async function pasteClipboard() {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            codeInput.value = text;
+            updateMetrics();
+            runCode();
+            showToast("Pasted from clipboard");
+            return;
+          }
+        }
+      } catch (e) {}
+      codeInput.focus();
+      showToast("Tap inside and press Paste");
+    }
+
+    // Quick Copy
+    function copyCode() {
+      const text = codeInput.value;
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      try {
+        document.execCommand('copy');
+        showToast("Copied to clipboard");
+      } catch(e) {
+        showToast("Copy failed");
+      }
+      document.body.removeChild(temp);
+    }
+
+    function clearCode() {
+      codeInput.value = '';
+      updateMetrics();
+      runCode();
+      showToast("Cleared");
+    }
+
+    function insertAtCursor(snippet) {
+      const start = codeInput.selectionStart;
+      const end = codeInput.selectionEnd;
+      const val = codeInput.value;
+      codeInput.value = val.substring(0, start) + snippet + val.substring(end);
+      codeInput.selectionStart = codeInput.selectionEnd = start + snippet.length;
+      codeInput.focus();
+      updateMetrics();
+    }
+
+    function loadTemplate(key) {
+      if (TEMPLATES[key]) {
+        codeInput.value = TEMPLATES[key];
+        modeSelect.value = key === 'html' ? 'html' : (key === 'ts' ? 'ts' : 'react');
+        updateMetrics();
+        runCode();
+        showToast(`Loaded ${key.toUpperCase()} template`);
+      }
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 1800);
+    }
+  </script>
 </body>
 </html>
